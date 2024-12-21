@@ -221,3 +221,7 @@ fieldsToClear = gridWidth * gridHeight - bombsPlanted
 for y in range(gridHeight):
     for x in range(gridWidth):
         uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
+
+ui.mainloop()
+
+
