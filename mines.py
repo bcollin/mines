@@ -1,17 +1,30 @@
 from tkinter import *
 import tkinter.font as font
 
-gridWidth = 8
-gridHeight = 8
+gridWidth = 9
+gridHeight = 9
 
-levels = {'easy': 0.14, 'meh': 0.16, 'hard': 0.2}
+gameState = 'playing' # Can receive clicks on the board.
+
+levels = {'easy': 0.14, 'meh': 0.156, 'hard': 0.206}
+
+def toggleReplayDialog():
+    global gameState, replayFrame
+    if gameState == 'playing':
+        replayFrame.pack_forget()
+    else:
+        replayFrame.pack(side='left', expand = True)
 
 def doWin():
-    global statusVar
+    global statusVar, gameState, replayFrame
+    gameState = 'waiting' # Player must initiate new game
+    toggleReplayDialog()
     statusVar.set('You won!')
 
 def doLose():
-    global statusVar, uiTree
+    global statusVar, uiTree, gameState, replayFrame
+    gameState = 'waiting'
+    toggleReplayDialog()
     statusVar.set('You lost...')
     # Reveal the bombs
     for y in range(len(uiTree)):
@@ -38,7 +51,7 @@ class Field:
         self.hasFlag = False
         self.hasBomb = False
         self.threatCount = 0
-        self.tileFont = font.Font(size = 12)
+        self.tileFont = font.Font(size = 10)
 
         self.label = StringVar(gameFrame, ' ')
         self.elem = Button(gameFrame,
@@ -49,9 +62,9 @@ class Field:
                         font = self.tileFont
                         )
         self.elem.grid(row = y, column = x)
-        command = lambda arg0 = None, arg1=x, arg2=y: leftClick(event = arg0, x = arg1, y = arg2)
+        command = lambda arg0 = None, arg1=x, arg2=y: leftClickField(event = arg0, x = arg1, y = arg2)
         self.elem.bind('<Button-1>', command)
-        command = lambda arg0 = None, arg1=x, arg2=y: rightClick(event = arg0, x = arg1, y = arg2)
+        command = lambda arg0 = None, arg1=x, arg2=y: rightClickField(event = arg0, x = arg1, y = arg2)
         self.elem.bind('<Button-3>', command)
     def test(self):
         if self.hasBomb:
@@ -138,8 +151,11 @@ def openNeighbours(x, y, grid):
                    openNeighbours(x+i, y+j, grid)
                    
 
-def leftClick(event, x, y):
-    global uiTree, testGrid
+def leftClickField(event, x, y):
+    global uiTree, testGrid, gameState
+    print(gameState)
+    if gameState == 'waiting':
+        return None
     if not uiTree[y][x].hasFlag:
         result = uiTree[y][x].test()
         if result:
@@ -153,8 +169,10 @@ def leftClick(event, x, y):
     else:
         print('Has flag')
 
-def rightClick(event, x, y):
-    global uiTree
+def rightClickField(event, x, y):
+    global uiTree, gameState
+    if gameState == 'waiting':
+        return None
     elem = uiTree[y][x]
     if not elem.visible:
         elem.toggleFlag()
@@ -176,10 +194,14 @@ def ceil(inVal):
     return int(floor(inVal)+1)
     
 
-def plantBombs(uiTree):
+def plantBombs(uiTree, level='easy'):
     import random
     global gridWidth, gridHeight, levels
-    difficulty = levels['easy']
+
+    if level not in levels:
+        level = 'easy'
+
+    difficulty = levels[level]
 
     tileMax = gridWidth * gridHeight
     bombMax = ceil(difficulty * tileMax)
@@ -193,12 +215,33 @@ def plantBombs(uiTree):
             uiTree[y][x].hasBomb = True
             # uiTree[y][x].label.set('X')
             bombsPlanted = bombsPlanted + 1
-            print ('Bombs planted:', bombsPlanted)
         attempts = attempts + 1
+    print ('Bombs planted:', bombsPlanted)
     return bombsPlanted
 
-def setUp(uiTree, testGrid, gridWidth, gridHeight):
+def setUp(level='easy'):
+    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame
+
+    if gameFrame != '':
+        gameFrame.destroy()
+    gameFrame = Frame()
+    gameFrame.pack()
+
+
     uiTree = []
+    testGrid  = []
+
+    if level == 'meh':
+        gridWidth = 16
+        gridHeight = 16
+    elif level == 'hard':
+        gridWidth = 30
+        gridHeight = 16
+    else:
+        # level == 'easy'
+        gridWidth = 9
+        gridHeight = 9
+
     for y in range(gridHeight):
         uiTree.append([])
         testGrid.append([])
@@ -207,28 +250,47 @@ def setUp(uiTree, testGrid, gridWidth, gridHeight):
             uiTree[y].append(instance)
             testGrid[y].append(0)
 
-    bombsPlanted = plantBombs(uiTree)
+    bombsPlanted = plantBombs(uiTree, level)
     fieldsToClear = gridWidth * gridHeight - bombsPlanted
 
     for y in range(gridHeight):
         for x in range(gridWidth):
             uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
-    return (uiTree, bombsPlanted, fieldsToClear)
+
+    statusVar.set('Hello!')
+    gameState = 'playing'
+    toggleReplayDialog()
+
+
+def restartGame(level='easy'):
+    global gameState
+    if gameState == 'playing':
+        # Needs to equal 'waiting' for the button to respond.
+        return None
+    setUp(level)
+    gameState = 'playing'
 
 ui = Tk()
 ui.title('Mines')
-uiTree = []
-testGrid  = []
 
 statusFrame = Frame()
 statusFrame.pack()
 statusVar = StringVar(ui, 'Hello!')
 statusMessage = Message(statusFrame, textvariable = statusVar)
-statusMessage.pack()
-gameFrame = Frame()
-gameFrame.pack()
+statusMessage.pack(side='left', expand=True)
+replayFrame = Frame(statusFrame)
+replayFrame.pack(side='left', expand=True)
+replayMessage = Label(replayFrame, text = 'Play again?')
+replayMessage.pack(side='left', expand=True)
+replayButton1 = Button(replayFrame, text = '9×9', command = lambda: restartGame('easy'))
+replayButton1.pack(side='left', expand=True)
+replayButton2 = Button(replayFrame, text = '16×16', command = lambda: restartGame('meh'))
+replayButton2.pack(side='left', expand=True)
+replayButton3 = Button(replayFrame, text = '30×16', command = lambda: restartGame('hard'))
+replayButton3.pack(side='left', expand=True)
+gameFrame = ''
 
-uiTree, bombsPlanted, fieldsToClear = setUp(uiTree, testGrid, gridWidth, gridHeight)
+setUp()
 
 ui.mainloop()
 
