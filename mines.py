@@ -20,13 +20,22 @@ def doWin():
     gameState = 'waiting' # Player must initiate new game
     toggleReplayDialog()
     statusVar.set('You won!')
+    statusMessage.config(fg='#00cc00', font="-weight bold")
+    # Flag the bombs.
+    for y in range(len(uiTree)):
+        for x in range(len(uiTree[y])):
+            field = uiTree[y][x]
+            field.elem.config(bd=0)
+            if field.hasBomb and not field.hasFlag:
+                field.label.set('P')
 
 def doLose():
     global statusVar, uiTree, gameState, replayFrame
     gameState = 'waiting'
     toggleReplayDialog()
     statusVar.set('You lost...')
-    # Reveal the bombs
+    statusMessage.config(fg="#cc0000", font= "-weight bold")
+    # Reveal the bombs.
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
             field = uiTree[y][x]
@@ -220,13 +229,12 @@ def plantBombs(uiTree, level='easy'):
     return bombsPlanted
 
 def setUp(level='easy'):
-    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame
+    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame, statusMessage
 
     if gameFrame != '':
         gameFrame.destroy()
     gameFrame = Frame()
-    gameFrame.pack()
-
+    gameFrame.pack(side='bottom', expand=True, padx=4, pady=4)
 
     uiTree = []
     testGrid  = []
@@ -258,6 +266,7 @@ def setUp(level='easy'):
             uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
 
     statusVar.set('Hello!')
+    statusMessage.config(fg="#000000", font="-weight normal")
     gameState = 'playing'
     toggleReplayDialog()
 
@@ -273,21 +282,29 @@ def restartGame(level='easy'):
 ui = Tk()
 ui.title('Mines')
 
-statusFrame = Frame()
-statusFrame.pack()
+statusFrame = Frame(ui, height=32, width=320)
+statusFrame.pack(side='top', expand=True)
+statusFrame.pack_propagate(0)
+
 statusVar = StringVar(ui, 'Hello!')
-statusMessage = Message(statusFrame, textvariable = statusVar)
+statusMessage = Message(statusFrame, textvariable = statusVar, width=200)
 statusMessage.pack(side='left', expand=True)
+
 replayFrame = Frame(statusFrame)
 replayFrame.pack(side='left', expand=True)
+
 replayMessage = Label(replayFrame, text = 'Play again?')
 replayMessage.pack(side='left', expand=True)
+
 replayButton1 = Button(replayFrame, text = '9×9', command = lambda: restartGame('easy'))
 replayButton1.pack(side='left', expand=True)
+
 replayButton2 = Button(replayFrame, text = '16×16', command = lambda: restartGame('meh'))
 replayButton2.pack(side='left', expand=True)
+
 replayButton3 = Button(replayFrame, text = '30×16', command = lambda: restartGame('hard'))
 replayButton3.pack(side='left', expand=True)
+
 gameFrame = ''
 
 setUp()
