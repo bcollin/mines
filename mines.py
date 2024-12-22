@@ -19,7 +19,7 @@ def doLose():
             field = uiTree[y][x]
             field.elem.config(bd=0)
             if field.hasBomb:
-                field.label.set('*')
+                field.label.set('X')
             elif field.threatCount > 0:
                 field.label.set(field.threatCount)
                 field.elem.config(foreground='#999999')
@@ -30,7 +30,7 @@ def doLose():
                 pass
 
 class Field:
-    global gameFrame, tileFont, fieldsToClear
+    global gameFrame, fieldsToClear
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -38,13 +38,15 @@ class Field:
         self.hasFlag = False
         self.hasBomb = False
         self.threatCount = 0
-        
+        self.tileFont = font.Font(size = 12)
+
         self.label = StringVar(gameFrame, ' ')
         self.elem = Button(gameFrame,
                         textvariable = self.label,
                         borderwidth = 2,
                         width = 4,
-                        height = 2
+                        height = 2,
+                        font = self.tileFont
                         )
         self.elem.grid(row = y, column = x)
         command = lambda arg0 = None, arg1=x, arg2=y: leftClick(event = arg0, x = arg1, y = arg2)
@@ -89,6 +91,7 @@ class Field:
         # print ('Fields to clear:', fieldsToClear)
         if fieldsToClear < 1:
             doWin()
+    # End of class Field.
 
 def inRange(value, direction = 'hor'):
     global gridWidth, gridHeight
@@ -188,16 +191,34 @@ def plantBombs(uiTree):
         y = random.randint(1, gridHeight) - 1
         if not uiTree[y][x].hasBomb:
             uiTree[y][x].hasBomb = True
-            # uiTree[y][x].label.set('*')
+            # uiTree[y][x].label.set('X')
             bombsPlanted = bombsPlanted + 1
             print ('Bombs planted:', bombsPlanted)
         attempts = attempts + 1
     return bombsPlanted
 
+def setUp(uiTree, testGrid, gridWidth, gridHeight):
+    uiTree = []
+    for y in range(gridHeight):
+        uiTree.append([])
+        testGrid.append([])
+        for x in range(gridWidth):
+            instance = Field(x, y)
+            uiTree[y].append(instance)
+            testGrid[y].append(0)
+
+    bombsPlanted = plantBombs(uiTree)
+    fieldsToClear = gridWidth * gridHeight - bombsPlanted
+
+    for y in range(gridHeight):
+        for x in range(gridWidth):
+            uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
+    return (uiTree, bombsPlanted, fieldsToClear)
+
 ui = Tk()
+ui.title('Mines')
 uiTree = []
 testGrid  = []
-tileFont = font.Font(size = 32)
 
 statusFrame = Frame()
 statusFrame.pack()
@@ -207,20 +228,7 @@ statusMessage.pack()
 gameFrame = Frame()
 gameFrame.pack()
 
-for y in range(gridHeight):
-    uiTree.append([])
-    testGrid.append([])
-    for x in range(gridWidth):
-        instance = Field(x, y)
-        uiTree[y].append(instance)
-        testGrid[y].append(0)
-
-bombsPlanted = plantBombs(uiTree)
-fieldsToClear = gridWidth * gridHeight - bombsPlanted
-
-for y in range(gridHeight):
-    for x in range(gridWidth):
-        uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
+uiTree, bombsPlanted, fieldsToClear = setUp(uiTree, testGrid, gridWidth, gridHeight)
 
 ui.mainloop()
 
