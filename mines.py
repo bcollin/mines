@@ -138,26 +138,17 @@ def openNeighbours(x, y, grid):
     global uiTree
     # temp = [[0,0,0],[0,0,0],[0,0,0]]
     sum = 0
-    testable = 8
+    grid[y][x] = 1
+    worthy_neighbours = []
     for j in range(-1,2):
         for i in range(-1,2):
             if not (i == 0 and j == 0):
-                if inRange(x+i, 'hor') and inRange(y+j, 'ver'):
+                if inRange(x+i, 'hor') and inRange(y+j, 'ver') and grid[y+j][x+i] != 1:
                     thisField = uiTree[y+j][x+i]
                     if not thisField.visible:
                         thisField.clearField()
-                    if not thisField.hasBomb:
-                        sum = sum + 1
-                else:
-                    testable = testable - 1
-    grid[y][x] = 1
-    if sum >= testable:
-        for j in range(-1,2):
-            for i in range(-1,2):
-                if inRange(x+i, 'hor') and \
-                   inRange(y+j, 'ver') and \
-                   grid[y+j][x+i] != 1: 
-                   openNeighbours(x+i, y+j, grid)
+                    if uiTree[y+j][x+i].threatCount == 0:
+                        openNeighbours(x+i, y+j, grid)
                    
 
 def leftClickField(event, x, y):
