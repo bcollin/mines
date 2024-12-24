@@ -1,12 +1,25 @@
 from tkinter import *
 import tkinter.font as font
+import time
 
 gridWidth = 9
 gridHeight = 9
-
+clock = 0
 gameState = 'playing' # Can receive clicks on the board.
-
 levels = {'easy': 0.14, 'meh': 0.156, 'hard': 0.206}
+
+def showTime():
+    global clock, gameState, ui, statusTimeVar
+    if gameState != 'waiting':
+        ui.after(1000, showTime)
+    passed = time.time()-clock
+    if passed < 3600:
+        seconds = floor(passed % 60)
+        minutes = floor(passed / 60)
+        tStr = f"{minutes:02}.{seconds:02}"
+    else:
+        tStr = '1hr+'
+    statusTimeVar.set(tStr)
 
 def toggleReplayDialog():
     global gameState, replayFrame
@@ -16,16 +29,19 @@ def toggleReplayDialog():
         replayFrame.pack(side='left', expand = True)
 
 def doWin():
-    global statusVar, gameState, replayFrame
+    global statusVar, gameState, replayFrame, clock
     gameState = 'waiting' # Player must initiate new game
     toggleReplayDialog()
     statusVar.set('You won!')
+    # print ('Win in', floor(time.time() - clock), 'seconds.')
     statusMessage.config(fg='#00cc00', font="-weight bold")
     # Flag the bombs.
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
             field = uiTree[y][x]
-            field.elem.config(bd=0)
+            # Resize required because the loss of a 2 pixel wide
+            # border shrinks the playing field rather jerkily.
+            field.elem.config(bd=0, width=44, height=44)
             if field.hasBomb and not field.hasFlag:
                 field.label.set('P')
 
@@ -39,7 +55,9 @@ def doLose():
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
             field = uiTree[y][x]
-            field.elem.config(bd=0)
+            # Resize required because the loss of a 2 pixel wide
+            # border shrinks the playing field rather jerkily.
+            field.elem.config(bd=0, width=44, height=44)
             if field.hasBomb:
                 field.label.set('X')
             elif field.threatCount > 0:
@@ -63,12 +81,18 @@ class Field:
         self.tileFont = font.Font(size = 10)
 
         self.label = StringVar(gameFrame, ' ')
+        # Trick to enable us to set the button dimensions using
+        # pixels (default is characters).
+        # See https://stackoverflow.com/a/46286221
+        self.fakePixel = PhotoImage(width=1, height=1)
         self.elem = Button(gameFrame,
                         textvariable = self.label,
+                        image = self.fakePixel,
                         borderwidth = 2,
-                        width = 4,
-                        height = 2,
-                        font = self.tileFont
+                        width = 40,
+                        height = 40,
+                        font = self.tileFont,
+                        compound = 'c'
                         )
         self.elem.grid(row = y, column = x)
         command = lambda arg0 = None, arg1=x, arg2=y: leftClickField(event = arg0, x = arg1, y = arg2)
@@ -152,10 +176,14 @@ def openNeighbours(x, y, grid):
                    
 
 def leftClickField(event, x, y):
-    global uiTree, testGrid, gameState
-    print(gameState)
+    global ui, uiTree, testGrid, gameState, clock, timeEvent
+    # print(gameState)
     if gameState == 'waiting':
         return None
+    if clock == 0:
+        # Invoking Tkinter's built-in scheduler. 
+        ui.after(1, showTime)
+        clock = time.time()
     if not uiTree[y][x].hasFlag:
         result = uiTree[y][x].test()
         if result:
@@ -165,7 +193,7 @@ def leftClickField(event, x, y):
             uiTree[y][x].elem.config(bd=0)
         else:
             doLose()
-        print('LMB:', event, x, y, vars(uiTree[y][x]))
+        # print('LMB:', event, x, y, vars(uiTree[y][x]))
     else:
         print('Has flag')
 
@@ -181,7 +209,7 @@ def rightClickField(event, x, y):
         else:
             uiTree[y][x].label.set(' ')
             pass
-    print('RMB:', event, x, y, vars(uiTree[y][x]))
+    # print('RMB:', event, x, y, vars(uiTree[y][x]))
 
 def floor(inVal):
     if not isinstance(inVal, float):
@@ -220,7 +248,8 @@ def plantBombs(uiTree, level='easy'):
     return bombsPlanted
 
 def setUp(level='easy'):
-    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame, statusMessage
+    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame, statusMessage, clock, statusTimeVar
+
 
     if gameFrame != '':
         gameFrame.destroy()
@@ -260,7 +289,8 @@ def setUp(level='easy'):
     statusMessage.config(fg="#000000", font="-weight normal")
     gameState = 'playing'
     toggleReplayDialog()
-
+    clock = 0
+    statusTimeVar.set('00.00')
 
 def restartGame(level='easy'):
     global gameState
@@ -276,6 +306,10 @@ ui.title('Mines')
 statusFrame = Frame(ui, height=32, width=320)
 statusFrame.pack(side='top', expand=True)
 statusFrame.pack_propagate(0)
+
+statusTimeVar = StringVar(ui, '00.00')
+statusClock = Message(statusFrame, textvariable = statusTimeVar, width=72)
+statusClock.pack(side='left', expand=True)
 
 statusVar = StringVar(ui, 'Hello!')
 statusMessage = Message(statusFrame, textvariable = statusVar, width=200)
