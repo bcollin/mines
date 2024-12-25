@@ -95,10 +95,16 @@ class Field:
                         compound = 'c'
                         )
         self.elem.grid(row = y, column = x)
-        command = lambda arg0 = None, arg1=x, arg2=y: leftClickField(event = arg0, x = arg1, y = arg2)
-        self.elem.bind('<Button-1>', command)
+        # Tkinter's events are basically X-Windows events.
+        # Documentation can be sparse, outdated, and only
+        # maintained by someone who seemingly needed 
+        # access themselves.
         command = lambda arg0 = None, arg1=x, arg2=y: rightClickField(event = arg0, x = arg1, y = arg2)
         self.elem.bind('<Button-3>', command)
+        command = lambda arg0 = None, arg1=x, arg2=y: rightClickField(event = arg0, x = arg1, y = arg2)
+        self.elem.bind('<Control-Button-1>', command)
+        command = lambda arg0 = None, arg1=x, arg2=y: leftClickField(event = arg0, x = arg1, y = arg2)
+        self.elem.bind('<Button-1>', command)
     def test(self):
         if self.hasBomb:
             return False
