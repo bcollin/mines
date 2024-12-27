@@ -70,6 +70,7 @@ def doLose():
 
 class Field:
     def __init__(self, x, y):
+        global gameFrame
         self.x = x
         self.y = y
         self.visible = False
@@ -255,7 +256,7 @@ def setUp(level='easy'):
 
     if gameFrame != '':
         gameFrame.destroy()
-    gameFrame = Frame()
+    gameFrame = Frame(relief='groove', bd=4)
     gameFrame.pack(side='bottom', expand=True, padx=4, pady=4)
 
     uiTree = []
