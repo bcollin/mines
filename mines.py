@@ -29,11 +29,10 @@ def toggleReplayDialog():
         replayFrame.pack(side='left', expand = True)
 
 def doWin():
-    global statusVar, gameState, replayFrame, clock
+    global gameState, uiTree, statusMessage, statusVar
     gameState = 'waiting' # Player must initiate new game
     toggleReplayDialog()
     statusVar.set('You won!')
-    # print ('Win in', floor(time.time() - clock), 'seconds.')
     statusMessage.config(fg='#00cc00', font="-weight bold")
     # Flag the bombs.
     for y in range(len(uiTree)):
@@ -46,7 +45,7 @@ def doWin():
                 field.label.set('P')
 
 def doLose():
-    global statusVar, uiTree, gameState, replayFrame
+    global gameState, statusMessage, statusVar, uiTree 
     gameState = 'waiting'
     toggleReplayDialog()
     statusVar.set('You lost...')
@@ -70,7 +69,6 @@ def doLose():
                 pass
 
 class Field:
-    global gameFrame, fieldsToClear
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -155,19 +153,18 @@ def inRange(value, direction = 'hor'):
             return True
     return False
 
-def neighboursWithBombs(x, y, uiTree):
+def neighboursWithBombs(x, y, board):
     bombs = 0
     for j in range(-1,2):
         for i in range(-1,2):
             if not (i == 0 and j == 0) and inRange(x+i, 'hor') and inRange(y+j, 'ver'):
-                if uiTree[y+j][x+i].hasBomb:
+                if board[y+j][x+i].hasBomb:
                     bombs = bombs + 1
     return bombs
 
 def openNeighbours(x, y, grid):
     global uiTree
     # temp = [[0,0,0],[0,0,0],[0,0,0]]
-    sum = 0
     grid[y][x] = 1
     worthy_neighbours = []
     for j in range(-1,2):
@@ -182,7 +179,7 @@ def openNeighbours(x, y, grid):
                    
 
 def leftClickField(event, x, y):
-    global ui, uiTree, testGrid, gameState, clock, timeEvent
+    global ui, uiTree, testGrid, gameState, clock
     # print(gameState)
     if gameState == 'waiting':
         return None
@@ -194,7 +191,7 @@ def leftClickField(event, x, y):
         result = uiTree[y][x].test()
         if result:
             uiTree[y][x].clearField()
-            openNeighbours(x, y, testGrid.copy())
+            openNeighbours(x, y, testGrid)
             # Dirty hack, see https://stackoverflow.com/a/33128233
             uiTree[y][x].elem.config(bd=0)
         else:
@@ -228,7 +225,7 @@ def ceil(inVal):
     return int(floor(inVal)+1)
     
 
-def plantBombs(uiTree, level='easy'):
+def plantBombs(board, level='easy'):
     import random
     global gridWidth, gridHeight, levels
 
@@ -245,17 +242,16 @@ def plantBombs(uiTree, level='easy'):
     while bombsPlanted < bombMax and attempts < 1000:
         x = random.randint(1, gridWidth) - 1
         y = random.randint(1, gridHeight) - 1
-        if not uiTree[y][x].hasBomb:
-            uiTree[y][x].hasBomb = True
-            # uiTree[y][x].label.set('X')
+        if not board[y][x].hasBomb:
+            board[y][x].hasBomb = True
+            # board[y][x].label.set('X')
             bombsPlanted = bombsPlanted + 1
         attempts = attempts + 1
     print ('Bombs planted:', bombsPlanted)
     return bombsPlanted
 
 def setUp(level='easy'):
-    global uiTree, testGrid, gridWidth, gridHeight, bombsPlanted, fieldsToClear, statusVar, gameState, replayFrame, gameFrame, statusMessage, clock, statusTimeVar
-
+    global uiTree, gameFrame, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar
 
     if gameFrame != '':
         gameFrame.destroy()
@@ -280,8 +276,7 @@ def setUp(level='easy'):
         uiTree.append([])
         testGrid.append([])
         for x in range(gridWidth):
-            instance = Field(x, y)
-            uiTree[y].append(instance)
+            uiTree[y].append(Field(x, y))
             testGrid[y].append(0)
 
     bombsPlanted = plantBombs(uiTree, level)
