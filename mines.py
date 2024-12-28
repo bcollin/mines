@@ -1,12 +1,53 @@
 from tkinter import *
 import tkinter.font as font
-import time, pathlib
+import time, pathlib, datetime
 
 gridWidth = 9
 gridHeight = 9
 clock = 0
 gameState = 'playing' # Can receive clicks on the board.
 levels = {'easy': 0.14, 'meh': 0.156, 'hard': 0.206}
+
+def getLevel():
+    global gridWidth
+    if gridWidth < 10:
+        return 'easy'
+    elif gridWidth > 25:
+        return 'hard'
+    else:
+        return 'meh'
+
+def readHighscores(path):
+    try:
+        with open(path, 'r') as f:
+            print ('f')
+    except Exception as error:
+        print ('Error: ', error)
+        return {}
+
+def setHighScores(path):
+    global highscores
+    for lineDict in highscores:
+        print ('test')
+    try:
+        pass
+        # with open(path, 'w')
+    except:
+        pass
+
+def addHighscore():
+    global highscores, statusTimeVar
+    level = getLevel()
+    time = statusTimeVar.get()
+    improvement = False
+    today = datetime.datetime.today().strftime('%Y-%m-%d')
+    if level not in highscores:
+        highscores[level] = []
+    highscores[level].append({'score': time, 'date': today})
+    highscores[level] = sorted(highscores[level], key=lambda d: d['date'])
+    highscores[level] = sorted(highscores[level], key=lambda d: d['score'])
+    if len(highscores[level]) > 5:
+        highscores[level].pop()
 
 def showTime():
     global clock, gameState, ui, statusTimeVar
@@ -30,10 +71,13 @@ def toggleReplayDialog():
 
 def doWin():
     global gameState, uiTree, statusMessage, statusVar
+    if gameState == 'waiting':
+        return None
     gameState = 'waiting' # Player must initiate new game
     toggleReplayDialog()
     statusVar.set('You won!')
     statusMessage.config(fg='#00cc00', font="-weight bold")
+    addHighscore()
     # Flag the bombs.
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
@@ -252,7 +296,9 @@ def plantBombs(board, level='easy'):
     return bombsPlanted
 
 def setUp(level='easy'):
-    global uiTree, gameFrame, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar
+    global uiTree, gameFrame, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar, highscores
+
+    print(highscores)
 
     if gameFrame != '':
         gameFrame.destroy()
@@ -335,8 +381,16 @@ replayButton3.pack(side='left', padx=(4,0))
 
 gameFrame = ''
 
-setUp()
+home = pathlib.Path.home()
+confDir = home / '.mines'
+try:
+    confDir.mkdir(parents=True, exist_ok=True)
+except Exception as error:
+    print ('Error: ', error)
+highscoreFilePath =  confDir / 'highscores.txt'
+highscores = readHighscores(highscoreFilePath)
 
+setUp()
 
 ui.mainloop()
 
