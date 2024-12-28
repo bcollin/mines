@@ -1,6 +1,6 @@
 from tkinter import *
 import tkinter.font as font
-import time
+import time, pathlib
 
 gridWidth = 9
 gridHeight = 9
@@ -22,11 +22,11 @@ def showTime():
     statusTimeVar.set(tStr)
 
 def toggleReplayDialog():
-    global gameState, replayFrame
+    global gameState, replayFrame, replayFrameSettings
     if gameState == 'playing':
         replayFrame.pack_forget()
     else:
-        replayFrame.pack(side='left', expand = True)
+        replayFrame.pack(**replayFrameSettings)
 
 def doWin():
     global gameState, uiTree, statusMessage, statusVar
@@ -48,7 +48,7 @@ def doLose():
     global gameState, statusMessage, statusVar, uiTree 
     gameState = 'waiting'
     toggleReplayDialog()
-    statusVar.set('You lost...')
+    statusVar.set('You la-la-lost...')
     statusMessage.config(fg="#cc0000", font= "-weight bold")
     # Reveal the bombs.
     for y in range(len(uiTree)):
@@ -306,35 +306,37 @@ ui = Tk()
 ui.title('Mines')
 
 statusFrame = Frame(ui, height=32, width=320)
-statusFrame.pack(side='top', expand=True)
+statusFrame.pack(side='top', fill = 'x', pady=(6,2))
 statusFrame.pack_propagate(0)
 
 statusTimeVar = StringVar(ui, '00.00')
 statusClock = Message(statusFrame, textvariable = statusTimeVar, width=72)
-statusClock.pack(side='left', expand=True)
+statusClock.pack(side='left')
 
 statusVar = StringVar(ui, 'Hello!')
 statusMessage = Message(statusFrame, textvariable = statusVar, width=200)
-statusMessage.pack(side='left', expand=True)
+statusMessage.pack(side='left')
 
-replayFrame = Frame(statusFrame)
-replayFrame.pack(side='left', expand=True)
+replayFrameSettings = {'side': 'top', 'expand': True, 'fill':'x'}
+replayFrame = Frame(ui, height=32)
+replayFrame.pack()
 
 replayMessage = Label(replayFrame, text = 'Play again?')
-replayMessage.pack(side='left', expand=True)
+replayMessage.pack(side='left')
 
 replayButton1 = Button(replayFrame, text = '9×9', command = lambda: restartGame('easy'))
-replayButton1.pack(side='left', expand=True)
+replayButton1.pack(side='left', padx=(4,0))
 
 replayButton2 = Button(replayFrame, text = '16×16', command = lambda: restartGame('meh'))
-replayButton2.pack(side='left', expand=True)
+replayButton2.pack(side='left', padx=(4,0))
 
 replayButton3 = Button(replayFrame, text = '30×16', command = lambda: restartGame('hard'))
-replayButton3.pack(side='left', expand=True)
+replayButton3.pack(side='left', padx=(4,0))
 
 gameFrame = ''
 
 setUp()
+
 
 ui.mainloop()
 
