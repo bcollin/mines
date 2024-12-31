@@ -69,8 +69,21 @@ def toggleReplayDialog():
     else:
         replayFrame.pack(**replayFrameSettings)
 
+def clearField(field):
+    global drawingField
+    drawingField.itemconfig(field.elem[0], fill='#a5a5a5')
+    drawingField.itemconfig(field.elem[1], fill='#808080')
+    x1, y1, x2, y2 = drawingField.coords(field.elem[2])
+    drawingField.coords(field.elem[2])
+    drawingField.coords(field.elem[2], x1-2, y1-2, x2+2, y2+2)
+    if field.threatCount < 1:
+        drawingField.itemconfig(field.elem[3], text = ' ') 
+    else:
+        drawingField.itemconfig(field.elem[3], text = field.threatCount, fill='#808080') 
+
+
 def doWin():
-    global gameState, uiTree, statusMessage, statusVar
+    global gameState, uiTree, statusMessage, statusVar, drawingField 
     if gameState == 'waiting':
         return None
     gameState = 'waiting' # Player must initiate new game
@@ -82,14 +95,11 @@ def doWin():
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
             field = uiTree[y][x]
-            # Resize required because the loss of a 2 pixel wide
-            # border shrinks the playing field rather jerkily.
-            field.elem.config(bd=0, width=44, height=44)
             if field.hasBomb and not field.hasFlag:
-                field.label.set('P')
+                drawingField.itemconfig(field.elem[3], text = 'P')
 
 def doLose():
-    global gameState, statusMessage, statusVar, uiTree 
+    global gameState, statusMessage, statusVar, uiTree, drawingField 
     gameState = 'waiting'
     toggleReplayDialog()
     statusVar.set('You la-la-lost...')
@@ -98,56 +108,70 @@ def doLose():
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
             field = uiTree[y][x]
-            # Resize required because the loss of a 2 pixel wide
-            # border shrinks the playing field rather jerkily.
-            field.elem.config(bd=0, width=44, height=44)
             if field.hasBomb:
-                field.label.set('X')
-            elif field.threatCount > 0:
-                field.label.set(field.threatCount)
-                field.elem.config(foreground='#999999')
-            elif field.threatCount < 1:
-                field.label.set(' ')
+                drawingField.itemconfig(field.elem[3], text = 'X')
             else:
-                # leave mistaken flags
-                pass
+                clearField(field)
+
+def buildFakeButton(parent, label = '', x=0, y=0, width=10, height=10, font = None):
+    global drawingField
+    x1 = x * width
+    x2 = x1 + width
+    xt = (x2 + x1) / 2
+    y1 = y * height
+    y2 = y1 + height
+    yt = (y2 + y1) / 2
+    # To toggle, swap the fills of sq1 and sq2, e.g.
+    # canvas.itemconfig(element, fill='black').
+    
+    # Represents top and left edge.
+    sq1 = drawingField.create_polygon(x1, y1, x2, y1, x1, y2, fill="#ffffff", outline='')
+
+    # Represents bottom and right edge
+    sq2 = drawingField.create_polygon(x1, y2, x2, y2, x2, y1, fill="#606060", outline='')
+
+    # The clickable center.
+    sq3 = drawingField.create_rectangle(x1+3, y1+3, x2-3, y2-3, fill="#c6c6c6", outline='')
+
+    # Option to render a bomb symbol, a flag or a threat count.
+    sq4 = drawingField.create_text(xt, yt, text = label, font=font)
+
+    out = [sq1, sq2, sq3, sq4]
+
+    return out
 
 class Field:
     def __init__(self, x, y):
-        global gameFrame
+        global gameFrame, drawingField
         self.x = x
         self.y = y
         self.visible = False
         self.hasFlag = False
         self.hasBomb = False
         self.threatCount = 0
-        self.tileFont = font.Font(size = 10)
 
         self.label = StringVar(gameFrame, ' ')
-        # Trick to enable us to set the button dimensions using
-        # pixels (default is characters).
-        # See https://stackoverflow.com/a/46286221
-        self.fakePixel = PhotoImage(width=1, height=1)
-        self.elem = Button(gameFrame,
-                        textvariable = self.label,
-                        image = self.fakePixel,
-                        borderwidth = 2,
-                        width = 40,
-                        height = 40,
-                        font = self.tileFont,
-                        compound = 'c'
-                        )
-        self.elem.grid(row = y, column = x)
+        self.elem = buildFakeButton(gameFrame,
+                        label=' ',
+                        x=x,
+                        y=y,
+                        width=40,
+                        height=40,
+                        font=tileFont)
+
         # Tkinter's events are basically X-Windows events.
         # Documentation can be sparse, outdated, and only
         # maintained by someone who seemingly needed 
-        # access themselves.
+        # someone better informed to do it.
         command = lambda arg0 = None, arg1=x, arg2=y: rightClickField(event = arg0, x = arg1, y = arg2)
-        self.elem.bind('<Button-3>', command)
+        drawingField.tag_bind(self.elem[2], '<Button-3>', command)
+        drawingField.tag_bind(self.elem[3], '<Button-3>', command)
         command = lambda arg0 = None, arg1=x, arg2=y: rightClickField(event = arg0, x = arg1, y = arg2)
-        self.elem.bind('<Control-Button-1>', command)
+        drawingField.tag_bind(self.elem[2], '<Control-Button-1>', command)
+        drawingField.tag_bind(self.elem[3], '<Control-Button-1>', command)
         command = lambda arg0 = None, arg1=x, arg2=y: leftClickField(event = arg0, x = arg1, y = arg2)
-        self.elem.bind('<Button-1>', command)
+        drawingField.tag_bind(self.elem[2], '<Button-1>', command)
+        drawingField.tag_bind(self.elem[3], '<Button-1>', command)
     def test(self):
         if self.hasBomb:
             return False
@@ -174,16 +198,7 @@ class Field:
             # print('if', self.visible,x,y)
             fieldsToClear = fieldsToClear - 1
             self.visible = True
-            self.elem.configure(relief='flat')
-            if self.threatCount < 1:
-                self.label.set(' ')
-            else:
-                self.label.set(str(self.threatCount))
-                self.elem.config(foreground='#999999')
-        else:
-            # print('else', self.visible,x,y)
-            pass
-        # print ('Fields to clear:', fieldsToClear)
+            clearField(self)
         if fieldsToClear < 1:
             doWin()
     # End of class Field.
@@ -237,8 +252,6 @@ def leftClickField(event, x, y):
         if result:
             uiTree[y][x].clearField()
             openNeighbours(x, y, testGrid)
-            # Dirty hack, see https://stackoverflow.com/a/33128233
-            uiTree[y][x].elem.config(bd=0)
         else:
             doLose()
         # print('LMB:', event, x, y, vars(uiTree[y][x]))
@@ -296,17 +309,9 @@ def plantBombs(board, level='easy'):
     return bombsPlanted
 
 def setUp(level='easy'):
-    global uiTree, gameFrame, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar, highscores
+    global uiTree, gameFrame, drawingField, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar, highscores
 
     print(highscores)
-
-    if gameFrame != '':
-        gameFrame.destroy()
-    gameFrame = Frame(relief='groove', bd=4)
-    gameFrame.pack(side='bottom', expand=True, padx=4, pady=4)
-
-    uiTree = []
-    testGrid  = []
 
     if level == 'meh':
         gridWidth = 16
@@ -318,6 +323,19 @@ def setUp(level='easy'):
         # level == 'easy'
         gridWidth = 9
         gridHeight = 9
+
+    if gameFrame != '':
+        gameFrame.destroy()
+    gameFrame = Frame(relief='groove', bd=4)
+    gameFrame.pack(side='bottom', expand=True, padx=4, pady=4)
+    if drawingField != '':
+        drawingField.destroy
+        print(drawingField)
+    drawingField = Canvas(gameFrame, width=gridWidth * 40, height=gridHeight * 40)
+    drawingField.pack()
+
+    uiTree = []
+    testGrid  = []
 
     for y in range(gridHeight):
         uiTree.append([])
@@ -351,6 +369,8 @@ def restartGame(level='easy'):
 ui = Tk()
 ui.title('Mines')
 
+tileFont = font.Font(size = 10)
+
 statusFrame = Frame(ui, height=32, width=320)
 statusFrame.pack(side='top', fill = 'x', pady=(6,2))
 statusFrame.pack_propagate(0)
@@ -380,6 +400,7 @@ replayButton3 = Button(replayFrame, text = '30×16', command = lambda: restartGa
 replayButton3.pack(side='left', padx=(4,0))
 
 gameFrame = ''
+drawingField = ''
 
 home = pathlib.Path.home()
 confDir = home / '.mines'

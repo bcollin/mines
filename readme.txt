@@ -3,11 +3,15 @@
 
 This game currently minimally requires a two-button mouse a screen resolution of at least 1366×768 for the harder game modes.
 
-Clear the fields that have no mines underneath by left-clicking them. You can protect a field by placing a flag: right-click adds and also removes a flag. (Ctrl + left click also counts as a right-click.)
+Clear the fields that have no mines underneath by left-clicking them. 
+
+You can protect a field by placing a flag: right-click adds and also removes a flag. (Ctrl + left click also counts as a right-click.)
 
 Hit a bomb and you lose!
 
 Clearing all fields without bombs wins the game.
+
+Although the game starts with trial and error, clearing fields will provide hints for the state of the neighbouring fields: a number will show how many bombs are hidden in the adjacent fields.
 
 Try and beat your best time!
 
