@@ -7,6 +7,16 @@ gridHeight = 9
 clock = 0
 gameState = 'playing' # Can receive clicks on the board.
 levels = {'easy': 0.14, 'meh': 0.156, 'hard': 0.206}
+colours = {
+    'black': 'black', # Do not use colours['black'], just write 'black'.
+    'white': 'white', # Id.
+    'anthracite': '#606060',
+    'dark grey': '#808080',
+    'middle grey': '#a5a5a5',
+    'light grey': '#c6c6c6',
+    'signal bad': '#cc0000',
+    'signal good': '#00cc00',
+    }
 
 def getLevel():
     global gridWidth
@@ -71,8 +81,8 @@ def toggleReplayDialog():
 
 def clearField(field):
     global drawingField
-    drawingField.itemconfig(field.elem[0], fill='#a5a5a5')
-    drawingField.itemconfig(field.elem[1], fill='#808080')
+    drawingField.itemconfig(field.elem[0], fill=colours['middle grey'])
+    drawingField.itemconfig(field.elem[1], fill=colours['dark grey'])
     x1, y1, x2, y2 = drawingField.coords(field.elem[2])
     drawingField.coords(field.elem[2])
     drawingField.coords(field.elem[2], x1-2, y1-2, x2+2, y2+2)
@@ -89,7 +99,7 @@ def doWin():
     gameState = 'waiting' # Player must initiate new game
     toggleReplayDialog()
     statusVar.set('You won!')
-    statusMessage.config(fg='#00cc00', font="-weight bold")
+    statusMessage.config(fg=colours['signal good'], font="-weight bold")
     addHighscore()
     # Flag the bombs.
     for y in range(len(uiTree)):
@@ -103,7 +113,7 @@ def doLose():
     gameState = 'waiting'
     toggleReplayDialog()
     statusVar.set('You la-la-lost...')
-    statusMessage.config(fg="#cc0000", font= "-weight bold")
+    statusMessage.config(fg=colours['signal bad'], font= "-weight bold")
     # Reveal the bombs.
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
@@ -125,13 +135,13 @@ def buildFakeButton(parent, label = '', x=0, y=0, width=10, height=10, font = No
     # canvas.itemconfig(element, fill='black').
     
     # Represents top and left edge.
-    sq1 = drawingField.create_polygon(x1, y1, x2, y1, x1, y2, fill="#ffffff", outline='')
+    sq1 = drawingField.create_polygon(x1, y1, x2, y1, x1, y2, fill='white', outline='')
 
     # Represents bottom and right edge
-    sq2 = drawingField.create_polygon(x1, y2, x2, y2, x2, y1, fill="#606060", outline='')
+    sq2 = drawingField.create_polygon(x1, y2, x2, y2, x2, y1, fill=colours['anthracite'], outline='')
 
     # The clickable center.
-    sq3 = drawingField.create_rectangle(x1+3, y1+3, x2-3, y2-3, fill="#c6c6c6", outline='')
+    sq3 = drawingField.create_rectangle(x1+3, y1+3, x2-3, y2-3, fill=colours['light grey'], outline='')
 
     # Option to render a bomb symbol, a flag or a threat count.
     sq4 = drawingField.create_text(xt, yt, text = label, font=font)
@@ -352,7 +362,7 @@ def setUp(level='easy'):
             uiTree[y][x].setNeighboursWithBombs(neighboursWithBombs(x, y, uiTree))
 
     statusVar.set('Hello!')
-    statusMessage.config(fg="#000000", font="-weight normal")
+    statusMessage.config(fg='black', font="-weight normal")
     gameState = 'playing'
     toggleReplayDialog()
     clock = 0
