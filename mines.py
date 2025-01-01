@@ -84,8 +84,9 @@ def clearField(field):
     drawingField.itemconfig(field.elem[0], fill=colours['middle grey'])
     drawingField.itemconfig(field.elem[1], fill=colours['dark grey'])
     x1, y1, x2, y2 = drawingField.coords(field.elem[2])
-    drawingField.coords(field.elem[2])
-    drawingField.coords(field.elem[2], x1-2, y1-2, x2+2, y2+2)
+    if int(x2-x1) == 34:
+        drawingField.coords(field.elem[2])
+        drawingField.coords(field.elem[2], x1-2, y1-2, x2+2, y2+2)
     if field.threatCount < 1:
         drawingField.itemconfig(field.elem[3], text = ' ') 
     else:
@@ -160,7 +161,6 @@ class Field:
         self.hasBomb = False
         self.threatCount = 0
 
-        self.label = StringVar(gameFrame, ' ')
         self.elem = buildFakeButton(gameFrame,
                         label=' ',
                         x=x,
@@ -272,14 +272,13 @@ def rightClickField(event, x, y):
     global uiTree, gameState
     if gameState == 'waiting':
         return None
-    elem = uiTree[y][x]
-    if not elem.visible:
-        elem.toggleFlag()
-        if elem.hasFlag:
-            uiTree[y][x].label.set('P')
+    field = uiTree[y][x]
+    if not field.visible:
+        field.toggleFlag()
+        if field.hasFlag:
+            drawingField.itemconfig(field.elem[3], text='P')
         else:
-            uiTree[y][x].label.set(' ')
-            pass
+            drawingField.itemconfig(field.elem[3], text=' ')
     # print('RMB:', event, x, y, vars(uiTree[y][x]))
 
 def floor(inVal):
@@ -312,7 +311,6 @@ def plantBombs(board, level='easy'):
         y = random.randint(1, gridHeight) - 1
         if not board[y][x].hasBomb:
             board[y][x].hasBomb = True
-            # board[y][x].label.set('X')
             bombsPlanted = bombsPlanted + 1
         attempts = attempts + 1
     print ('Bombs planted:', bombsPlanted)
