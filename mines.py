@@ -1,3 +1,7 @@
+# Mines
+#
+# Copyright 2025, Branko Collin
+
 from tkinter import *
 import tkinter.font as font
 import time, pathlib, datetime
@@ -76,8 +80,10 @@ def toggleReplayDialog():
     global gameState, replayFrame, replayFrameSettings
     if gameState == 'playing':
         replayFrame.pack_forget()
+        replayDecoLeft.pack(side='left')
     else:
         replayFrame.pack(**replayFrameSettings)
+        replayDecoLeft.pack_forget()
 
 def clearField(field):
     global drawingField
@@ -391,21 +397,32 @@ statusVar = StringVar(ui, 'Hello!')
 statusMessage = Message(statusFrame, textvariable = statusVar, width=200)
 statusMessage.pack(side='left')
 
-replayFrameSettings = {'side': 'top', 'expand': True, 'fill':'x'}
-replayFrame = Frame(ui, height=32)
-replayFrame.pack()
+replayFrameWrapper = Frame(ui, height=32, bd=0)
+replayFrameWrapper.pack(expand=True, fill=BOTH, side=TOP)
+
+replayDecoLeftImg = PhotoImage(file='assets/decoration-1-32-left-trans.png')
+replayDecoLeft = Label(replayFrameWrapper, image=replayDecoLeftImg, bd=0)
+replayDecoLeft.pack(side='left')
+
+replayDecoRightImg = PhotoImage(file='assets/decoration-1-32-right-trans.png')
+replayDecoRight = Label(replayFrameWrapper, image=replayDecoRightImg, bd=0)
+replayDecoRight.pack(side='right')
+
+replayFrameSettings = {'side': 'top', 'expand': True, 'fill': 'x'}
+replayFrame = Frame(replayFrameWrapper, height=32)
+replayFrame.pack(replayFrameSettings)
 
 replayMessage = Label(replayFrame, text = 'Play again?')
 replayMessage.pack(side='left')
 
 replayButton1 = Button(replayFrame, text = '9×9', command = lambda: restartGame('easy'))
-replayButton1.pack(side='left', padx=(4,0))
+replayButton1.pack(side='left', padx=(4,0), pady=2)
 
 replayButton2 = Button(replayFrame, text = '16×16', command = lambda: restartGame('meh'))
-replayButton2.pack(side='left', padx=(4,0))
+replayButton2.pack(side='left', padx=(4,0), pady=2)
 
 replayButton3 = Button(replayFrame, text = '30×16', command = lambda: restartGame('hard'))
-replayButton3.pack(side='left', padx=(4,0))
+replayButton3.pack(side='left', padx=(4,0), pady=2)
 
 gameFrame = ''
 drawingField = ''
