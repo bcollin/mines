@@ -4,7 +4,7 @@
 
 from tkinter import *
 import tkinter.font as font
-import time, pathlib, datetime
+import time, pathlib, datetime, json
 
 gridWidth = 9
 gridHeight = 9
@@ -35,6 +35,15 @@ def readHighscores(path):
     try:
         with open(path, 'r') as f:
             print ('f')
+    except Exception as error:
+        print ('Error: ', error)
+        return {}
+
+def readConfiguration(path):
+    try:
+        with open(path, 'r') as f:
+            d = json.load(f)
+            return d
     except Exception as error:
         print ('Error: ', error)
         return {}
@@ -436,7 +445,16 @@ except Exception as error:
 highscoreFilePath =  confDir / 'highscores.txt'
 highscores = readHighscores(highscoreFilePath)
 
-setUp()
+confFilePath = confDir / 'user.conf'
+conf = readConfiguration(confFilePath)
+
+level = 'easy'
+if 'level' in conf:
+    temp = conf['level']
+    if temp in levels:
+        level = temp
+
+setUp(level)
 
 ui.mainloop()
 
