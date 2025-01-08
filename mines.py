@@ -34,7 +34,8 @@ def getLevel():
 def readHighscores(path):
     try:
         with open(path, 'r') as f:
-            print ('f')
+            h = json.load(f)
+            return h
     except Exception as error:
         print ('Error: ', error)
         return {}
@@ -51,12 +52,12 @@ def readConfiguration(path):
 def setHighScores(path):
     global highscores
     for lineDict in highscores:
-        print ('test')
+        print (lineDict, highscores[lineDict])
     try:
-        pass
-        # with open(path, 'w')
-    except:
-        pass
+        with open(path, 'w') as f:
+            json.dump(highscores, f)
+    except Exception as error:
+        print('Error: highscores werent saved because of:', error)
 
 def addHighscore():
     global highscores, statusTimeVar
@@ -71,6 +72,8 @@ def addHighscore():
     highscores[level] = sorted(highscores[level], key=lambda d: d['score'])
     if len(highscores[level]) > 5:
         highscores[level].pop()
+    print('Saving highscores to:', highscoreFilePath)
+    setHighScores(highscoreFilePath)
 
 def showTime():
     global clock, gameState, ui, statusTimeVar
