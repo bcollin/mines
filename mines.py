@@ -51,8 +51,6 @@ def readConfiguration(path):
 
 def setHighScores(path):
     global highscores
-    for lineDict in highscores:
-        print (lineDict, highscores[lineDict])
     try:
         with open(path, 'w') as f:
             json.dump(highscores, f)
@@ -459,6 +457,7 @@ if 'level' in conf:
 
 setUp(level)
 
-ui.mainloop()
+if __name__=='__main__':
+    ui.mainloop()
 
 
