@@ -22,6 +22,7 @@ colours = {
     'signal good': '#00cc00',
     }
 
+# Retrieve the level of the current game.
 def getLevel():
     global gridWidth
     if gridWidth < 10:
@@ -31,6 +32,7 @@ def getLevel():
     else:
         return 'meh'
 
+# Read highscores from a file.
 def readHighscores(path):
     try:
         with open(path, 'r') as f:
@@ -40,6 +42,7 @@ def readHighscores(path):
         print ('Error: ', error)
         return {}
 
+# Read configuration from a file.
 def readConfiguration(path):
     try:
         with open(path, 'r') as f:
@@ -49,7 +52,8 @@ def readConfiguration(path):
         print ('Error: ', error)
         return {}
 
-def setHighScores(path):
+# Store highscores in a file.
+def saveHighscores(path):
     global highscores
     try:
         with open(path, 'w') as f:
@@ -57,22 +61,41 @@ def setHighScores(path):
     except Exception as error:
         print('Error: highscores werent saved because of:', error)
 
-def addHighscore():
-    global highscores, statusTimeVar
-    level = getLevel()
-    time = statusTimeVar.get()
+# Add the winning score to a highscores list.
+# Warning: the outer list (i.e. 'hs') may or may not be a copy,
+# but the lists and dictonaries inside are not and are the same
+# objects as the children of the 'highscores' global.
+# This is probably fine, but if you change any children,
+# you should be aware of the side-effects.
+def extendScoreslist(hs, score, today):
+    if score == {}:
+        return (False, hs)
+    if ('level' not in score) or ('time' not in score):
+        return (False, hs)
     improvement = False
-    today = datetime.datetime.today().strftime('%Y-%m-%d')
-    if level not in highscores:
-        highscores[level] = []
-    highscores[level].append({'score': time, 'date': today})
-    highscores[level] = sorted(highscores[level], key=lambda d: d['date'])
-    highscores[level] = sorted(highscores[level], key=lambda d: d['score'])
-    if len(highscores[level]) > 5:
-        highscores[level].pop()
-    print('Saving highscores to:', highscoreFilePath)
-    setHighScores(highscoreFilePath)
+    level = score['level']
+    time = score['time']
+    if score['level'] not in hs:
+        hs[level] = []
+    hs[level].append({'score': time, 'date': today})
+    hs[level] = sorted(hs[level], key=lambda d: d['date'])
+    hs[level] = sorted(hs[level], key=lambda d: d['score'])
+    if len(hs[level]) > 5:
+        hs[level].pop()
+    return (True, hs)
 
+# Add the current score to the highscores list and save if needed.
+def addHighscore(score={}):
+    global highscores
+    today = datetime.datetime.today().strftime('%Y-%m-%d')
+    result, temp = extendScoreslist(highscores, score, today)
+    if not result:
+        # Score could not be added to highscores, no need to save.
+        return None
+    print('Saving highscores to:', highscoreFilePath)
+    saveHighscores(highscoreFilePath)
+
+# Show the passed time in the status bar.
 def showTime():
     global clock, gameState, ui, statusTimeVar
     if gameState != 'waiting':
@@ -86,6 +109,7 @@ def showTime():
         tStr = '1hr+'
     statusTimeVar.set(tStr)
 
+# Toggle the replay dialog.
 def toggleReplayDialog():
     global gameState, replayFrame, replayFrameSettings
     if gameState == 'playing':
@@ -95,7 +119,9 @@ def toggleReplayDialog():
         replayFrame.pack(**replayFrameSettings)
         replayDecoLeft.pack_forget()
 
-def clearField(field):
+# Change the visible appearance of cell to that of one that has been
+# cleared.
+def drawFieldClear(field):
     global drawingField
     drawingField.itemconfig(field.elem[0], fill=colours['middle grey'])
     drawingField.itemconfig(field.elem[1], fill=colours['dark grey'])
@@ -108,7 +134,8 @@ def clearField(field):
     else:
         drawingField.itemconfig(field.elem[3], text = field.threatCount, fill='#808080') 
 
-
+# Execute what is needed upon a win.
+# If necessary, tear-down could be added to this function.
 def doWin():
     global gameState, uiTree, statusMessage, statusVar, drawingField 
     if gameState == 'waiting':
@@ -117,7 +144,7 @@ def doWin():
     toggleReplayDialog()
     statusVar.set('You won!')
     statusMessage.config(fg=colours['signal good'], font="-weight bold")
-    addHighscore()
+    addHighscore({'level': getLevel(), 'time': statusTimeVar.get()})
     # Flag the bombs.
     for y in range(len(uiTree)):
         for x in range(len(uiTree[y])):
@@ -125,6 +152,8 @@ def doWin():
             if field.hasBomb and not field.hasFlag:
                 drawingField.itemconfig(field.elem[3], text = 'P')
 
+# Execute what is needed upon a loss.
+# If necessary, tear-down could be added to this function.
 def doLose():
     global gameState, statusMessage, statusVar, uiTree, drawingField 
     gameState = 'waiting'
@@ -138,8 +167,9 @@ def doLose():
             if field.hasBomb:
                 drawingField.itemconfig(field.elem[3], text = 'X')
             else:
-                clearField(field)
+                drawFieldClear(field)
 
+# Creates the visual representation of a single cell.
 def buildFakeButton(parent, label = '', x=0, y=0, width=10, height=10, font = None):
     global drawingField
     x1 = x * width
@@ -167,6 +197,8 @@ def buildFakeButton(parent, label = '', x=0, y=0, width=10, height=10, font = No
 
     return out
 
+# Defines the state of a single cell and sets up the
+# representation of the cell in the GUI.
 class Field:
     def __init__(self, x, y):
         global gameFrame, drawingField
@@ -213,7 +245,7 @@ class Field:
             else:
                 self.hasFlag = True
     def getCoords(self):
-        return (x, y)
+        return (self.x, self.y)
     def setNeighboursWithBombs(self, num):
         self.threatCount = num
     def clearField(self):
@@ -224,11 +256,12 @@ class Field:
             # print('if', self.visible,x,y)
             fieldsToClear = fieldsToClear - 1
             self.visible = True
-            clearField(self)
+            drawFieldClear(self)
         if fieldsToClear < 1:
             doWin()
     # End of class Field.
 
+# Returns True if a coordinate is on the board.
 def inRange(value, direction = 'hor'):
     global gridWidth, gridHeight
     if direction == 'hor':
@@ -239,6 +272,7 @@ def inRange(value, direction = 'hor'):
             return True
     return False
 
+# Count the number of neighbouring cells that have bombs.
 def neighboursWithBombs(x, y, board):
     bombs = 0
     for j in range(-1,2):
@@ -248,11 +282,12 @@ def neighboursWithBombs(x, y, board):
                     bombs = bombs + 1
     return bombs
 
+# Clear neihbouring cells if they are clearable.
+# This seems to use a different definition of
+# 'clearable' than other games of the same type.
 def openNeighbours(x, y, grid):
     global uiTree
-    # temp = [[0,0,0],[0,0,0],[0,0,0]]
     grid[y][x] = 1
-    worthy_neighbours = []
     for j in range(-1,2):
         for i in range(-1,2):
             if not (i == 0 and j == 0):
@@ -262,8 +297,8 @@ def openNeighbours(x, y, grid):
                         thisField.clearField()
                     if uiTree[y+j][x+i].threatCount == 0:
                         openNeighbours(x+i, y+j, grid)
-                   
 
+# Callback for the LMB.
 def leftClickField(event, x, y):
     global ui, uiTree, testGrid, gameState, clock
     # print(gameState)
@@ -284,6 +319,7 @@ def leftClickField(event, x, y):
     else:
         print('Has flag')
 
+# Callback for the RMB.
 def rightClickField(event, x, y):
     global uiTree, gameState
     if gameState == 'waiting':
@@ -297,17 +333,28 @@ def rightClickField(event, x, y):
             drawingField.itemconfig(field.elem[3], text=' ')
     # print('RMB:', event, x, y, vars(uiTree[y][x]))
 
+# Rounds float inVal down, e.g. 3.9 => 3.
 def floor(inVal):
     if not isinstance(inVal, float):
         inVal = float(inVal)
     return int(inVal)
 
+# Rounds float inVal up, e.g. 3.1 => 4
 def ceil(inVal):
     if not isinstance(inVal, float):
         inVal = float(inVal)
     return int(floor(inVal)+1)
     
-
+# Randomly add a number of bombs to a hithertofore empty board.
+#
+# This function can be greatly improved. Currently it just
+# generates 1000 random coordinates and adds a bomb to them
+# until the number of bombs has reached the limit for the
+# difficulty level. Theoretically it may happen that the
+# 1000 coordinate count has been reached before the limit
+# for the difficulty level has been reached. Also generating
+# 1000 coordinates is a bit overkill for the smaller
+# boards.
 def plantBombs(board, level='easy'):
     import random
     global gridWidth, gridHeight, levels
@@ -332,6 +379,7 @@ def plantBombs(board, level='easy'):
     print ('Bombs planted:', bombsPlanted)
     return bombsPlanted
 
+# Game set-up at the start of a round.
 def setUp(level='easy'):
     global uiTree, gameFrame, drawingField, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar, highscores
 
@@ -382,6 +430,9 @@ def setUp(level='easy'):
     clock = 0
     statusTimeVar.set('00.00')
 
+# Pre-set-up after a round. I am not sure if this needs
+# to exist if we already run either doWin() or doLose() and
+# follow it up by setUp().
 def restartGame(level='easy'):
     global gameState
     if gameState == 'playing':
@@ -449,13 +500,13 @@ highscores = readHighscores(highscoreFilePath)
 confFilePath = confDir / 'user.conf'
 conf = readConfiguration(confFilePath)
 
-level = 'easy'
+start_level = 'easy'
 if 'level' in conf:
     temp = conf['level']
     if temp in levels:
-        level = temp
+        start_level = temp
 
-setUp(level)
+setUp(start_level)
 
 if __name__=='__main__':
     ui.mainloop()
