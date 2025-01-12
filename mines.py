@@ -92,7 +92,6 @@ def addHighscore(score={}):
     if not result:
         # Score could not be added to highscores, no need to save.
         return None
-    print('Saving highscores to:', highscoreFilePath)
     saveHighscores(highscoreFilePath)
 
 # Show the passed time in the status bar.
@@ -134,6 +133,8 @@ def drawFieldClear(field):
     else:
         drawingField.itemconfig(field.elem[3], text = field.threatCount, fill='#808080') 
 
+# Used upon game end, hence the 'reason': the revelation of the
+# bomb locations works slightly different for wins and losses.
 def markAllBombs(reason = 'win'):
     if reason not in ['win', 'loss']:
         return None
@@ -257,7 +258,6 @@ class Field:
         if not self.visible and \
         not self.hasFlag and \
         not self.hasBomb:
-            # print('if', self.visible,x,y)
             fieldsToClear = fieldsToClear - 1
             self.visible = True
             drawFieldClear(self)
@@ -305,7 +305,6 @@ def openNeighbours(x, y, grid):
 # Callback for the LMB.
 def leftClickField(event, x, y):
     global ui, uiTree, testGrid, gameState, clock
-    # print(gameState)
     if gameState == 'waiting':
         return None
     if clock == 0:
@@ -319,9 +318,6 @@ def leftClickField(event, x, y):
             openNeighbours(x, y, testGrid)
         else:
             doLose()
-        # print('LMB:', event, x, y, vars(uiTree[y][x]))
-    else:
-        print('Has flag')
 
 # Callback for the RMB.
 def rightClickField(event, x, y):
@@ -335,7 +331,6 @@ def rightClickField(event, x, y):
             drawingField.itemconfig(field.elem[3], text='P')
         else:
             drawingField.itemconfig(field.elem[3], text=' ')
-    # print('RMB:', event, x, y, vars(uiTree[y][x]))
 
 # Rounds float inVal down, e.g. 3.9 => 3.
 def floor(inVal):
@@ -380,14 +375,11 @@ def plantBombs(board, level='easy'):
             board[y][x].hasBomb = True
             bombsPlanted = bombsPlanted + 1
         attempts = attempts + 1
-    print ('Bombs planted:', bombsPlanted)
     return bombsPlanted
 
 # Game set-up at the start of a round.
 def setUp(level='easy'):
     global uiTree, gameFrame, drawingField, testGrid, gridWidth, gridHeight, fieldsToClear, statusVar, gameState, statusMessage, clock, statusTimeVar, highscores
-
-    print(highscores)
 
     if level == 'meh':
         gridWidth = 16
@@ -406,7 +398,6 @@ def setUp(level='easy'):
     gameFrame.pack(side='bottom', expand=True, padx=4, pady=4)
     if drawingField != '':
         drawingField.destroy
-        print(drawingField)
     drawingField = Canvas(gameFrame, width=gridWidth * 40, height=gridHeight * 40)
     drawingField.pack()
 
