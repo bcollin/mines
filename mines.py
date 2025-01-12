@@ -100,14 +100,14 @@ def showTime():
     global clock, gameState, ui, statusTimeVar
     if gameState != 'waiting':
         ui.after(1000, showTime)
-    passed = time.time()-clock
-    if passed < 3600:
-        seconds = floor(passed % 60)
-        minutes = floor(passed / 60)
-        tStr = f"{minutes:02}.{seconds:02}"
-    else:
-        tStr = '1hr+'
-    statusTimeVar.set(tStr)
+        passed = time.time()-clock
+        if passed < 3600:
+            seconds = floor(passed % 60)
+            minutes = floor(passed / 60)
+            tStr = f"{minutes:02}.{seconds:02}"
+        else:
+            tStr = '1hr+'
+        statusTimeVar.set(tStr)
 
 # Toggle the replay dialog.
 def toggleReplayDialog():
@@ -134,6 +134,20 @@ def drawFieldClear(field):
     else:
         drawingField.itemconfig(field.elem[3], text = field.threatCount, fill='#808080') 
 
+def markAllBombs(reason = 'win'):
+    if reason not in ['win', 'loss']:
+        return None
+    for y in range(len(uiTree)):
+        for x in range(len(uiTree[y])):
+            field = uiTree[y][x]
+            if field.hasBomb:
+                if reason == 'win':
+                    drawingField.itemconfig(field.elem[3], text = 'P')
+                else: 
+                    drawingField.itemconfig(field.elem[3], text = 'X')
+            elif reason == 'loss':
+                drawFieldClear(field)
+
 # Execute what is needed upon a win.
 # If necessary, tear-down could be added to this function.
 def doWin():
@@ -146,11 +160,7 @@ def doWin():
     statusMessage.config(fg=colours['signal good'], font="-weight bold")
     addHighscore({'level': getLevel(), 'time': statusTimeVar.get()})
     # Flag the bombs.
-    for y in range(len(uiTree)):
-        for x in range(len(uiTree[y])):
-            field = uiTree[y][x]
-            if field.hasBomb and not field.hasFlag:
-                drawingField.itemconfig(field.elem[3], text = 'P')
+    markAllBombs(reason = 'win')
 
 # Execute what is needed upon a loss.
 # If necessary, tear-down could be added to this function.
@@ -161,13 +171,7 @@ def doLose():
     statusVar.set('You la-la-lost...')
     statusMessage.config(fg=colours['signal bad'], font= "-weight bold")
     # Reveal the bombs.
-    for y in range(len(uiTree)):
-        for x in range(len(uiTree[y])):
-            field = uiTree[y][x]
-            if field.hasBomb:
-                drawingField.itemconfig(field.elem[3], text = 'X')
-            else:
-                drawFieldClear(field)
+    markAllBombs(reason = 'loss')
 
 # Creates the visual representation of a single cell.
 def buildFakeButton(parent, label = '', x=0, y=0, width=10, height=10, font = None):
