@@ -1,6 +1,8 @@
 # Mines
 #
 # Copyright 2025, Branko Collin
+#
+# See LICENSE.txt for licensing details.
 
 from tkinter import *
 import tkinter.font as font
@@ -118,8 +120,8 @@ def toggleReplayDialog():
         replayFrame.pack(**replayFrameSettings)
         replayDecoLeft.pack_forget()
 
-# Change the visible appearance of cell to that of one that has been
-# cleared.
+# Change the visible appearance of a cell to that of one that has
+# been cleared.
 def drawFieldClear(field):
     global drawingField
     drawingField.itemconfig(field.elem[0], fill=colours['middle grey'])
@@ -138,8 +140,8 @@ def drawFieldClear(field):
 def markAllBombs(reason = 'win'):
     if reason not in ['win', 'loss']:
         return None
-    for y in range(len(uiTree)):
-        for x in range(len(uiTree[y])):
+    for y in range(gridHeight):
+        for x in range(gridWidth):
             field = uiTree[y][x]
             if field.hasBomb:
                 if reason == 'win':
@@ -287,8 +289,8 @@ def neighboursWithBombs(x, y, board):
     return bombs
 
 # Clear neihbouring cells if they are clearable.
-# This seems to use a different definition of
-# 'clearable' than other games of the same type.
+# This uses a different definition of
+# 'clearable' than other games of this type.
 def openNeighbours(x, y, grid):
     global uiTree
     grid[y][x] = 1
@@ -319,7 +321,7 @@ def leftClickField(event, x, y):
         else:
             doLose()
 
-# Callback for the RMB.
+# Callback for the RMB and for Ctrl+LMB.
 def rightClickField(event, x, y):
     global uiTree, gameState
     if gameState == 'waiting':
