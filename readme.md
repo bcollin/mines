@@ -30,3 +30,5 @@ On operating systems that are shipped with Python and the Python Standard Librar
 On others you first need to install Python.
 
 An icon source file has been provided as icon.png - you may need to convert this to whatever your system uses first.
+
+![screenshot](screenshot.png)
